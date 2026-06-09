@@ -1,5 +1,5 @@
 import { BookOpen, Plus, Library } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type { Book } from '../types';
 import { useBookStore } from '../store/useBookStore';
 import { compressImage, validateImageFile } from '../utils/image';
@@ -8,7 +8,12 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 
 export default function BookShelf() {
-  const { books, loadData, isLoaded, addBook, updateBook } = useBookStore();
+  const books = useBookStore(state => state.books);
+  const isLoaded = useBookStore(state => state.isLoaded);
+  const loadData = useBookStore(state => state.loadData);
+  const addBook = useBookStore(state => state.addBook);
+  const updateBook = useBookStore(state => state.updateBook);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   
@@ -40,7 +45,7 @@ export default function BookShelf() {
     }
   }, [showAddModal, editingBook]);
 
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -54,9 +59,9 @@ export default function BookShelf() {
       console.error('Failed to process image:', err);
       alert('图片处理失败，请重试');
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !author.trim()) {
       alert('请填写书名和作者');
@@ -75,17 +80,17 @@ export default function BookShelf() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [title, author, coverImage, editingBook, updateBook, addBook]);
 
-  const handleEdit = (book: Book) => {
+  const handleEdit = useCallback((book: Book) => {
     setEditingBook(book);
     setShowAddModal(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setShowAddModal(false);
     setEditingBook(null);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen py-8">

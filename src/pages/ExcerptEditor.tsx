@@ -7,7 +7,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OCRProgress } from '../types';
 import { PRESET_TAGS } from '../types';
@@ -24,15 +24,13 @@ export default function ExcerptEditor() {
   const navigate = useNavigate();
   const isEditing = !!excerptId;
   
-  const {
-    getBook,
-    getExcerpt,
-    addExcerpt,
-    updateExcerpt,
-    getAllTags,
-    loadData,
-    isLoaded
-  } = useBookStore();
+  const books = useBookStore(state => state.books);
+  const excerpts = useBookStore(state => state.excerpts);
+  const isLoaded = useBookStore(state => state.isLoaded);
+  const loadData = useBookStore(state => state.loadData);
+  const addExcerpt = useBookStore(state => state.addExcerpt);
+  const updateExcerpt = useBookStore(state => state.updateExcerpt);
+  const deleteExcerpt = useBookStore(state => state.deleteExcerpt);
 
   const [pageNumber, setPageNumber] = useState('');
   const [date, setDate] = useState(todayString());
@@ -48,9 +46,21 @@ export default function ExcerptEditor() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const book = bookId ? getBook(bookId) : undefined;
-  const existingExcerpt = isEditing && excerptId ? getExcerpt(excerptId) : undefined;
-  const allTags = getAllTags();
+  const book = useMemo(() => 
+    bookId ? books.find(b => b.id === bookId) : undefined,
+    [books, bookId]
+  );
+  const existingExcerpt = useMemo(() => 
+    isEditing && excerptId ? excerpts.find(e => e.id === excerptId) : undefined,
+    [excerpts, isEditing, excerptId]
+  );
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    excerpts.forEach(excerpt => {
+      excerpt.tags.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [excerpts]);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -70,7 +80,7 @@ export default function ExcerptEditor() {
     }
   }, [existingExcerpt]);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = useCallback(async (file: File) => {
     if (!validateImageFile(file)) return;
     
     try {
@@ -81,25 +91,25 @@ export default function ExcerptEditor() {
       console.error('Failed to process image:', err);
       alert('图片处理失败，请重试');
     }
-  };
+  }, []);
 
-  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       await handleImageUpload(file);
     }
-  };
+  }, [handleImageUpload]);
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
       await handleImageUpload(file);
     }
-  };
+  }, [handleImageUpload]);
 
-  const handleOCR = async () => {
+  const handleOCR = useCallback(async () => {
     if (!originalImage) {
       alert('请先上传图片');
       return;
@@ -113,25 +123,25 @@ export default function ExcerptEditor() {
     } catch (err) {
       console.error('OCR failed:', err);
     }
-  };
+  }, [originalImage]);
 
-  const toggleTag = (tag: string) => {
+  const toggleTag = useCallback((tag: string) => {
     if (tags.includes(tag)) {
       setTags(tags.filter(t => t !== tag));
     } else {
       setTags([...tags, tag]);
     }
-  };
+  }, [tags]);
 
-  const addCustomTag = () => {
+  const addCustomTag = useCallback(() => {
     const trimmed = customTag.trim();
     if (trimmed && !tags.includes(trimmed)) {
       setTags([...tags, trimmed]);
       setCustomTag('');
     }
-  };
+  }, [customTag, tags]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!pageNumber.trim()) {
@@ -170,20 +180,20 @@ export default function ExcerptEditor() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [pageNumber, content, bookId, isEditing, excerptId, date, thought, tags, originalImage, updateExcerpt, addExcerpt, navigate]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (excerptId) {
-      useBookStore.getState().deleteExcerpt(excerptId);
+      deleteExcerpt(excerptId);
       navigate(`/book/${bookId}`);
     }
-  };
+  }, [excerptId, deleteExcerpt, navigate, bookId]);
 
-  const removeImage = () => {
+  const removeImage = useCallback(() => {
     setOriginalImage('');
     setImagePreview('');
     setOcrProgress(null);
-  };
+  }, []);
 
   if (!book) {
     return (

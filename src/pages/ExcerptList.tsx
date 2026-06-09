@@ -10,7 +10,7 @@ import {
   Tag as TagIcon,
   X
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { SortType } from '../types';
 import { PRESET_TAGS } from '../types';
@@ -24,21 +24,20 @@ import { Modal } from '../components/Modal';
 export default function ExcerptList() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
-  const { 
-    getBook, 
-    getExcerptsByBook, 
-    searchQuery, 
-    setSearchQuery,
-    activeTags, 
-    setActiveTags,
-    sortType, 
-    setSortType,
-    showFavoritesOnly,
-    setShowFavoritesOnly,
-    getAllTags,
-    loadData,
-    isLoaded
-  } = useBookStore();
+  
+  const books = useBookStore(state => state.books);
+  const excerpts = useBookStore(state => state.excerpts);
+  const searchQuery = useBookStore(state => state.searchQuery);
+  const activeTags = useBookStore(state => state.activeTags);
+  const sortType = useBookStore(state => state.sortType);
+  const showFavoritesOnly = useBookStore(state => state.showFavoritesOnly);
+  const isLoaded = useBookStore(state => state.isLoaded);
+  
+  const setSearchQuery = useBookStore(state => state.setSearchQuery);
+  const setActiveTags = useBookStore(state => state.setActiveTags);
+  const setSortType = useBookStore(state => state.setSortType);
+  const setShowFavoritesOnly = useBookStore(state => state.setShowFavoritesOnly);
+  const loadData = useBookStore(state => state.loadData);
 
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showTagFilter, setShowTagFilter] = useState(false);
@@ -50,9 +49,23 @@ export default function ExcerptList() {
     }
   }, [isLoaded, loadData]);
 
-  const book = bookId ? getBook(bookId) : undefined;
-  const allExcerpts = bookId ? getExcerptsByBook(bookId) : [];
-  const allTags = getAllTags();
+  const book = useMemo(() => 
+    bookId ? books.find(b => b.id === bookId) : undefined,
+    [books, bookId]
+  );
+
+  const allExcerpts = useMemo(() => 
+    bookId ? excerpts.filter(e => e.bookId === bookId) : [],
+    [excerpts, bookId]
+  );
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    allExcerpts.forEach(excerpt => {
+      excerpt.tags.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [allExcerpts]);
 
   const filteredExcerpts = useMemo(() => {
     const filtered = filterExcerpts(allExcerpts, searchQuery, activeTags, showFavoritesOnly);
@@ -68,28 +81,28 @@ export default function ExcerptList() {
 
   const currentSortLabel = sortOptions.find(o => o.value === sortType)?.label || '排序';
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (!book) return;
     const md = generateMarkdown(book, allExcerpts, sortType);
     const filename = `${book.title}-书摘`;
     downloadMarkdown(md, filename);
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 2000);
-  };
+  }, [book, allExcerpts, sortType]);
 
-  const toggleTag = (tag: string) => {
+  const toggleTag = useCallback((tag: string) => {
     if (activeTags.includes(tag)) {
       setActiveTags(activeTags.filter(t => t !== tag));
     } else {
       setActiveTags([...activeTags, tag]);
     }
-  };
+  }, [activeTags, setActiveTags]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchQuery('');
     setActiveTags([]);
     setShowFavoritesOnly(false);
-  };
+  }, [setSearchQuery, setActiveTags, setShowFavoritesOnly]);
 
   const showPageNumber = sortType.startsWith('page');
 
