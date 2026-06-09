@@ -4,6 +4,7 @@ import {
   Calendar,
   Download,
   FileText,
+  Heart,
   Plus,
   Search,
   Tag as TagIcon,
@@ -32,6 +33,8 @@ export default function ExcerptList() {
     setActiveTags,
     sortType, 
     setSortType,
+    showFavoritesOnly,
+    setShowFavoritesOnly,
     getAllTags,
     loadData,
     isLoaded
@@ -52,9 +55,9 @@ export default function ExcerptList() {
   const allTags = getAllTags();
 
   const filteredExcerpts = useMemo(() => {
-    const filtered = filterExcerpts(allExcerpts, searchQuery, activeTags);
+    const filtered = filterExcerpts(allExcerpts, searchQuery, activeTags, showFavoritesOnly);
     return sortExcerpts(filtered, sortType);
-  }, [allExcerpts, searchQuery, activeTags, sortType]);
+  }, [allExcerpts, searchQuery, activeTags, sortType, showFavoritesOnly]);
 
   const sortOptions: { value: SortType; label: string }[] = [
     { value: 'date-desc', label: '日期 · 最新在前' },
@@ -85,6 +88,7 @@ export default function ExcerptList() {
   const clearFilters = () => {
     setSearchQuery('');
     setActiveTags([]);
+    setShowFavoritesOnly(false);
   };
 
   const showPageNumber = sortType.startsWith('page');
@@ -100,7 +104,8 @@ export default function ExcerptList() {
     );
   }
 
-  const hasFilters = searchQuery || activeTags.length > 0;
+  const hasFilters = searchQuery || activeTags.length > 0 || showFavoritesOnly;
+  const favoriteCount = allExcerpts.filter(e => e.isFavorite).length;
 
   return (
     <div className="min-h-screen py-8">
@@ -126,10 +131,16 @@ export default function ExcerptList() {
                 <p className="text-ink-600">{book.author}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <span className="text-sm text-ink-600">
                 共 {allExcerpts.length} 条书摘
               </span>
+              {favoriteCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-sm text-terracotta-500">
+                  <Heart className="h-4 w-4 fill-current" />
+                  {favoriteCount} 条收藏
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -195,6 +206,15 @@ export default function ExcerptList() {
               )}
             </Button>
 
+            <Button
+              variant={showFavoritesOnly ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            >
+              <Heart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+              收藏
+            </Button>
+
             {hasFilters && (
               <Button
                 variant="ghost"
@@ -251,6 +271,11 @@ export default function ExcerptList() {
         {hasFilters && (
           <div className="mb-4 text-sm text-ink-600">
             找到 <span className="font-semibold text-ink-800">{filteredExcerpts.length}</span> 条匹配的书摘
+            {showFavoritesOnly && (
+              <span className="ml-2 inline-flex items-center gap-1">
+                （<Heart className="h-3 w-3 fill-current text-terracotta-500" /> 仅显示收藏）
+              </span>
+            )}
             {activeTags.length > 0 && (
               <span className="ml-2">
                 （标签：{activeTags.join('、')}）

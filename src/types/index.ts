@@ -16,6 +16,7 @@ export interface Excerpt {
   thought: string;
   originalImage: string;
   tags: string[];
+  isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +32,7 @@ export interface AppState {
   searchQuery: string;
   activeTags: string[];
   sortType: SortType;
+  showFavoritesOnly: boolean;
 }
 
 export interface OCRProgress {

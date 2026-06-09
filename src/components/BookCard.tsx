@@ -1,4 +1,4 @@
-import { BookOpen, Edit3, Trash2 } from 'lucide-react';
+import { BookOpen, Edit3, Heart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '../types';
@@ -17,7 +17,9 @@ export function BookCard({ book, onEdit, index }: BookCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteBook = useBookStore(state => state.deleteBook);
   const getExcerptsByBook = useBookStore(state => state.getExcerptsByBook);
+  const getFavoriteCountByBook = useBookStore(state => state.getFavoriteCountByBook);
   const excerptCount = getExcerptsByBook(book.id).length;
+  const favoriteCount = getFavoriteCountByBook(book.id);
 
   const handleDelete = () => {
     deleteBook(book.id);
@@ -66,11 +68,19 @@ export function BookCard({ book, onEdit, index }: BookCardProps) {
             </button>
           </div>
           
-          {excerptCount > 0 && (
-            <div className="absolute top-3 right-3 rounded-full bg-terracotta-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
-              {excerptCount} 条书摘
-            </div>
-          )}
+          <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+            {excerptCount > 0 && (
+              <div className="rounded-full bg-terracotta-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                {excerptCount} 条书摘
+              </div>
+            )}
+            {favoriteCount > 0 && (
+              <div className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                <Heart className="h-3 w-3 fill-current" />
+                {favoriteCount}
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="p-4">

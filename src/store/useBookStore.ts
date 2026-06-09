@@ -8,6 +8,7 @@ interface BookStore {
   searchQuery: string;
   activeTags: string[];
   sortType: SortType;
+  showFavoritesOnly: boolean;
   isLoaded: boolean;
   
   loadData: () => void;
@@ -17,11 +18,15 @@ interface BookStore {
   deleteBook: (id: string) => void;
   getBook: (id: string) => Book | undefined;
   
-  addExcerpt: (excerpt: Omit<Excerpt, 'id' | 'createdAt' | 'updatedAt'>) => Excerpt;
+  addExcerpt: (excerpt: Omit<Excerpt, 'id' | 'createdAt' | 'updatedAt' | 'isFavorite'>) => Excerpt;
   updateExcerpt: (id: string, data: Partial<Excerpt>) => void;
   deleteExcerpt: (id: string) => void;
   getExcerpt: (id: string) => Excerpt | undefined;
   getExcerptsByBook: (bookId: string) => Excerpt[];
+  
+  toggleFavorite: (id: string) => void;
+  setShowFavoritesOnly: (show: boolean) => void;
+  getFavoriteCountByBook: (bookId: string) => number;
   
   setSearchQuery: (query: string) => void;
   setActiveTags: (tags: string[]) => void;
@@ -36,6 +41,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   searchQuery: '',
   activeTags: [],
   sortType: 'date-desc',
+  showFavoritesOnly: false,
   isLoaded: false,
 
   loadData: () => {
@@ -85,6 +91,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
     const newExcerpt: Excerpt = {
       id: generateId(),
       ...excerptData,
+      isFavorite: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -113,6 +120,21 @@ export const useBookStore = create<BookStore>((set, get) => ({
   getExcerpt: (id) => get().excerpts.find(excerpt => excerpt.id === id),
 
   getExcerptsByBook: (bookId) => get().excerpts.filter(e => e.bookId === bookId),
+
+  toggleFavorite: (id) => {
+    const excerpts = get().excerpts.map(excerpt =>
+      excerpt.id === id
+        ? { ...excerpt, isFavorite: !excerpt.isFavorite, updatedAt: new Date().toISOString() }
+        : excerpt
+    );
+    set({ excerpts });
+    saveExcerpts(excerpts);
+  },
+
+  setShowFavoritesOnly: (show) => set({ showFavoritesOnly: show }),
+
+  getFavoriteCountByBook: (bookId) => 
+    get().excerpts.filter(e => e.bookId === bookId && e.isFavorite).length,
 
   setSearchQuery: (query) => set({ searchQuery: query }),
   setActiveTags: (tags) => set({ activeTags: tags }),

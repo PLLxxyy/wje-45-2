@@ -28,7 +28,8 @@ export function sortExcerpts(excerpts: Excerpt[], sortType: SortType): Excerpt[]
 export function filterExcerpts(
   excerpts: Excerpt[],
   searchQuery: string,
-  activeTags: string[]
+  activeTags: string[],
+  showFavoritesOnly: boolean = false
 ): Excerpt[] {
   return excerpts.filter(excerpt => {
     const matchesSearch = !searchQuery || 
@@ -39,7 +40,9 @@ export function filterExcerpts(
     const matchesTags = activeTags.length === 0 || 
       activeTags.every(tag => excerpt.tags.includes(tag));
     
-    return matchesSearch && matchesTags;
+    const matchesFavorite = !showFavoritesOnly || excerpt.isFavorite;
+    
+    return matchesSearch && matchesTags && matchesFavorite;
   });
 }
 

@@ -1,4 +1,4 @@
-import { Calendar, Edit3, FileText, Trash2 } from 'lucide-react';
+import { Calendar, Edit3, FileText, Heart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Excerpt } from '../types';
@@ -19,6 +19,7 @@ export function ExcerptCard({ excerpt, showPageNumber = false, index }: ExcerptC
   const [showImage, setShowImage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteExcerpt = useBookStore(state => state.deleteExcerpt);
+  const toggleFavorite = useBookStore(state => state.toggleFavorite);
 
   const handleDelete = () => {
     deleteExcerpt(excerpt.id);
@@ -32,44 +33,60 @@ export function ExcerptCard({ excerpt, showPageNumber = false, index }: ExcerptC
         style={{ animationDelay: `${index * 60}ms` }}
       >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {showPageNumber && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-terracotta-500/10 px-3 py-1 text-sm font-medium text-terracotta-500">
-                <FileText className="h-4 w-4" />
-                第 {excerpt.pageNumber} 页
+            <div className="flex flex-wrap items-center gap-3">
+              {showPageNumber && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-terracotta-500/10 px-3 py-1 text-sm font-medium text-terracotta-500">
+                  <FileText className="h-4 w-4" />
+                  第 {excerpt.pageNumber} 页
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 text-sm text-ink-600">
+                <Calendar className="h-4 w-4" />
+                {formatDate(excerpt.date)}
               </span>
-            )}
-            <span className="inline-flex items-center gap-1 text-sm text-ink-600">
-              <Calendar className="h-4 w-4" />
-              {formatDate(excerpt.date)}
-            </span>
-          </div>
-          <div className="flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            {excerpt.originalImage && (
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowImage(true)}
-                className="rounded-full p-2 text-ink-600 hover:bg-paper-200 transition-colors"
-                title="查看原图"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(excerpt.id);
+                }}
+                className={`rounded-full p-2 transition-colors ${
+                  excerpt.isFavorite
+                    ? 'text-terracotta-500 hover:bg-terracotta-500/10'
+                    : 'text-ink-400 hover:text-ink-600 hover:bg-paper-200'
+                }`}
+                title={excerpt.isFavorite ? '取消收藏' : '收藏'}
               >
-                <FileText className="h-4 w-4" />
+                <Heart className={`h-4 w-4 ${excerpt.isFavorite ? 'fill-current' : ''}`} />
               </button>
-            )}
-            <button
-              onClick={() => navigate(`/book/${excerpt.bookId}/edit/${excerpt.id}`)}
-              className="rounded-full p-2 text-ink-600 hover:bg-paper-200 transition-colors"
-              title="编辑"
-            >
-              <Edit3 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-full p-2 text-terracotta-500 hover:bg-terracotta-500/10 transition-colors"
-              title="删除"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              <div className="flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                {excerpt.originalImage && (
+                  <button
+                    onClick={() => setShowImage(true)}
+                    className="rounded-full p-2 text-ink-600 hover:bg-paper-200 transition-colors"
+                    title="查看原图"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate(`/book/${excerpt.bookId}/edit/${excerpt.id}`)}
+                  className="rounded-full p-2 text-ink-600 hover:bg-paper-200 transition-colors"
+                  title="编辑"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="rounded-full p-2 text-terracotta-500 hover:bg-terracotta-500/10 transition-colors"
+                  title="删除"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
         {excerpt.tags.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">

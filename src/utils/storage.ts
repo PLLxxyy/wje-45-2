@@ -34,7 +34,12 @@ export function saveExcerpts(excerpts: Excerpt[]): void {
 export function loadExcerpts(): Excerpt[] {
   try {
     const data = localStorage.getItem(EXCERPTS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const excerpts = JSON.parse(data);
+    return excerpts.map((excerpt: Excerpt) => ({
+      isFavorite: false,
+      ...excerpt,
+    }));
   } catch (e) {
     console.error('Failed to load excerpts:', e);
     return [];
